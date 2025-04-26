@@ -1,29 +1,36 @@
-const http = require('http');
-const app = require('./app');
-const { connectToDB } = require('./database/MongoDB');
-const redisClient = require('./config/redis.conf');
-const { Server } = require('socket.io');
-const socketHelper = require('./helpers/Socket.helper');
+import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
+import { connectDB } from './config/mongoDB.conf.js';
+import authRoutes from './routes/Auth.routes.js';
 
+dotenv.config();
 const PORT = process.env.PORT || 3000;
 
 // Connect to DB
-connectToDB();
+connectDB();
 
-// Redis connection
-redisClient();
+const app = express();
 
-// Http server and Socket.io
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-  },
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev'));
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
-// Socket.io handler
-socketHelper(io);
+// Routing
+app.get('/', (req, res) => {
+  res.send('Collaboration API is running');
+});
 
-server.listen(PORT, () => {
-  console.log(`Server running on port:${PORT}`);
+app.use('/api/auth', authRoutes);
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

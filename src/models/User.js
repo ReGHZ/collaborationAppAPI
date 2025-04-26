@@ -1,18 +1,29 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const userSchema = new mongoose.Schema({
-  oauthId: { type: String, required: true },
-  provider: { type: String, enum: ['google', 'github'], required: true },
-  name: String,
-  email: { type: String, required: true, unique: true },
-  password: { type: String },
-  avatar: String,
-  role: {
-    type: String,
-    enum: ['admin', 'editor', 'viewer'],
-    default: 'viewer',
+const userSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      unique: true,
+      validate: {
+        validator: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+        message: 'Invalid email format',
+      },
+    },
+    googleId: String,
+    githubId: String,
+    refreshTokens: [String], // Untuk menyimpan refresh tokens
+    displayName: String,
+    avatar: String,
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+    lastActive: Date,
+    documents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Document' }],
   },
-  createdAt: { type: Date, default: Date.now },
-});
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('User', userSchema);
+export default mongoose.model('User', userSchema);

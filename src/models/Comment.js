@@ -1,15 +1,24 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const CommentSchema = new mongoose.Schema({
-  document: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Document',
-    required: true,
+const commentSchema = new mongoose.Schema(
+  {
+    document: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Document',
+      required: true,
+    },
+    content: { type: String, required: true },
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    mentions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    resolved: { type: Boolean, default: false },
+    parentComment: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }, // Threaded comments
   },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  content: { type: String, required: true },
-  mentions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  createdAt: { type: Date, default: Date.now },
-});
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('Comment', CommentSchema);
+commentSchema.index({ document: 1, createdAt: -1 });
+export default mongoose.model('Comment', commentSchema);

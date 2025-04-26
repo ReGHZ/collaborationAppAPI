@@ -5,14 +5,13 @@ import eslintConfig from 'eslint-config-dicodingacademy';
 
 export default defineConfig([
   {
-    files: ['**/*.{js,mjs,cjs}'],
+    files: ['**/*.{js,mjs}'],
     plugins: { js },
-    extends: ['js/recommended'],
+    extends: ['js/recommended', eslintConfig],
   },
-  { files: ['**/*.js'], languageOptions: { sourceType: 'commonjs' } },
+  { files: ['**/*.js'], languageOptions: { sourceType: 'module' } },
   {
     files: ['**/*.{js,mjs,cjs}'],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
-  eslintConfig,
 ]);

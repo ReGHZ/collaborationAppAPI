@@ -1,19 +1,24 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const FileSchema = new mongoose.Schema({
-  document: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Document',
-    required: true,
+const fileSchema = new mongoose.Schema(
+  {
+    document: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Document',
+      required: true,
+    },
+    filename: { type: String, required: true },
+    mimetype: { type: String, required: true },
+    size: { type: Number, required: true },
+    chunks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'FileChunk' }],
+    uploader: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    isUploadComplete: { type: Boolean, default: false },
   },
-  uploader: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  filename: String,
-  originalname: String,
-  mimetype: String,
-  size: Number,
-  url: String,
-  chunks: [String], // Untuk chunking file besar
-  createdAt: { type: Date, default: Date.now },
-});
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('File', FileSchema);
+export default mongoose.model('File', fileSchema);

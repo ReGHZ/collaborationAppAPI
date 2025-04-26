@@ -1,37 +1,43 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-const authMiddleware = async (req, res, next) => {
-  const authHeader = req.headers['authorization']; // get the authorization header from the request
-  const token = authHeader && authHeader.split(' ')[1]; // extract the token from the header if it exists
+export const authenticateJWT = async (req, res, next) => {
+  const authHeader = req.headers.authorization; // get the Authorization header from the request
 
-  if (!token) {
-    // if token does not exist
-    return res.status(401).json({
-      success: false, // indicate failure
-      message: 'Access denied. No token provided. Please login to continue', // error message if token is missing
-    });
+  if (!authHeader?.startsWith('Bearer ')) {
+    // check if header exists and starts with 'Bearer '
+    return res.status(401).json({ message: 'Unauthorized' }); // respond with 401 if not authorized
   }
 
+  const token = authHeader.split(' ')[1]; // extract the token from the header
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // verify and decode the JWT token
-    req.user = await User.findById(decoded.id).select('-password'); // find user by id from token, exclude password
-    if (!req.user) return res.status(401).json({ message: 'User not found' }); // if user not found
-    next(); // proceed to the next middleware
-  } catch (e) {
-    // if error occurs during token verification
-    console.error('Error during decode token:', e); // log the error to console
-    if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid or expired token. Please login again.',
-      });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // verify the token using the secret
+    const user = await User.findById(decoded.id).select('-refreshTokens'); // find the user by id and exclude refreshTokens
+
+    if (!user) {
+      // if user not found
+      return res.status(401).json({ message: 'User not found' }); // respond with 401 if user not found
     }
-    return res.status(500).json({
-      success: false, // indicate failure
-      message: 'Something went wrong!', // generic error message
-    });
+
+    req.user = user; // attach the user object to the request
+    next(); // call the next middleware
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      // check if the error is token expired
+      return res.status(401).json({ message: 'Token expired' }); // respond with 401 if token expired
+    }
+    res.status(403).json({ message: 'Invalid token' }); // respond with 403 if token is invalid
   }
 };
 
-module.exports = authMiddleware;
+export const authorizeRoles = (...roles) => {
+  // function to authorize based on user roles
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      // check if user's role is in the allowed roles
+      return res.status(403).json({ message: 'Forbidden' }); // respond with 403 if not allowed
+    }
+    next(); // call the next middleware
+  };
+};

@@ -1,17 +1,36 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const DocumentSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  content: { type: String, default: '' },
-  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  collaborators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  versions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Version' }],
-  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
-  files: [{ type: mongoose.Schema.Types.ObjectId, ref: 'File' }],
-  whiteboard: { type: Object, default: {} },
-  permission: { type: String, enum: ['private', 'public'], default: 'private' },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
+const documentSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    content: mongoose.Schema.Types.Mixed,
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    permissions: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        level: { type: String, enum: ['view', 'edit'] },
+      },
+    ],
+    fileType: { type: String, enum: ['text', 'whiteboard'], required: true },
+    currentVersion: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DocumentVersion',
+    },
+    collaborators: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        cursorPosition: Number,
+        lastActive: Date,
+      },
+    ],
+    isDeleted: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('Document', DocumentSchema);
+documentSchema.index({ title: 'text', content: 'text' });
+export default mongoose.model('Document', documentSchema);
